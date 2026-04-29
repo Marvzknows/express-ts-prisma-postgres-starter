@@ -1,7 +1,6 @@
 import "dotenv/config";
 import express from "express";
 import type { Request, Response } from "express";
-import { Prisma } from "./generated/prisma/client.js";
 import { prisma } from "./lib/prisma.js";
 
 const app = express();
