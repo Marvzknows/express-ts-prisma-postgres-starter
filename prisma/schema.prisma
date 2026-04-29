@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  // bcrypt hash of the user's password. The plaintext is never stored.
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // SHA-256 hex of the signed refresh JWT. We store the hash (not the JWT
+  // itself) so a database leak alone cannot be turned into usable refresh
+  // tokens. Verification: hash the cookie and compare.
+  tokenHash String @unique
+
+  // Absolute expiry. Always checked alongside the JWT's exp claim — DB takes
+  // precedence so admins can force-expire a token without rotating secrets.
+  expiresAt DateTime
+
+  // When set, the token has been rotated or logged out. A signature-valid
+  // refresh JWT whose row has revokedAt != null means the token is being
+  // replayed → trigger full-family revocation (theft mitigation).
+  revokedAt DateTime?
+
+  // Forensics: id of the token that replaced this one during rotation.
+  replacedBy String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
